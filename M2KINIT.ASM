@@ -1,0 +1,74 @@
+	JP M2K_START
+	DW MACW,VER
+M2K_START:
+	DI
+	IM 1
+	LD SP,BDOS
+	; Startup runs below the resident destination. Copy backward because
+	; the source image and its final address range may overlap.
+	LD HL,LAST_ADR-1
+	LD DE,RESIDENT_END-1
+	LD BC,LAST_ADR-INITE
+	LDDR
+
+	LD A,0FH			; PIO A mode 0 (output)
+	OUT (PIO_AC),A
+	LD A,0CFH			; PIO B mode 3, all input as in the IPL
+	OUT (PIO_BC),A
+	LD A,0FFH
+	OUT (PIO_BC),A
+	LD A,30H			; 80 columns, main RAM, row 0
+	OUT (PIO_A),A
+	XOR A
+	OUT (0F6H),A
+	OUT (0F4H),A
+	OUT (GRAM_PAGE),A
+	LD A,7
+	OUT (0F5H),A
+	CALL M2K_TIMER_INIT
+
+	LD HL,0000H
+	LD DE,0001H
+	LD BC,00FFH
+	LD (HL),0
+	LDIR
+	LD A,0C3H
+	LD (0000H),A
+	LD (0005H),A
+	LD HL,CPM_WBOOT
+	LD (0001H),HL
+	LD HL,BDOS
+	LD (0006H),HL
+	LD A,HIGH CPM_BOOT
+	LD (000BH),A
+	LD A,0E9H
+	LD (000FH),A
+	LD A,0C9H
+	LD (0028H),A
+	LD (EXTBIO),A
+	LD A,0FBH			; EI; RETI for the common BIOS's IM 1
+	LD (0038H),A
+	LD HL,04DEDH
+	LD (0039H),HL
+	LD HL,_DISKE+1
+	LD (DISKVE),HL
+	LD HL,_BREAK+1
+	LD (BREAKV),HL
+	CALL M2K_GRAM_PROBE
+	LD HL,M2K_BANNER
+	CALL MSX
+	CALL CHKEY
+	CP 3
+	JP Z,COMMAND
+	LD HL,COMMAND
+	PUSH HL
+	LD DE,M2K_AUTOEXEC
+	JP _COMANL
+
+M2K_AUTOEXEC:
+	DB "AUTOEXEC A:",0
+M2K_BANNER:
+	DB 0CH,"LSX-Dodgers for MZ-2000",0DH,0AH,0
+
+INITE:
+	ORG BDOS,INITE-OFFSET

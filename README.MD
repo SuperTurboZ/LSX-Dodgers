@@ -2,6 +2,15 @@ LSX-Dodgers for X1/turbo/Z, MZ-700/1500, PC-8801mkIISR and MSX Gaku
 
 A>■
 
+# MZ-2000版
+
+このブランチはオリジナルのLSX-Dodgresから、Codexを使ってMZ-2000版へ移植したものです。
+移植要件、実装内容、ビルド方法、確認済み範囲と未確認事項は[MZ-2000移植ドキュメント](docs/porting/mz2000.md)にまとめています。
+
+生成物は `disk/ldmz2000.mzt`（カセット/FDD共通MZT）と `disk/ldmz2000.d88`（FDD起動用D88）です。実機・エミュレータでの全機能の動作確認は未完了です。
+
+以降はオリジナル版のドキュメントになります。
+
 
 # 機能概略
 
