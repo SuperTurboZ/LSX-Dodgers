@@ -17,15 +17,26 @@ _DEVICE:
 	DW 8,0,0,0
 	DB "FDD1"
 
-	DS 4*32
-GRAMFL:
-	DW 2,GDRD,GDWT
+	DS 2*32			; C:, D:
+EMMFL:				; E: PIO-3034 compatible EMM
+	DW 0,EDRD,EDWT		; activated by M2K_EMM_PROBE
 	DB 0FAH,1
-	DW 184
-	DB 0,7,0,1,1,1
+	DW M2K_EMM_SECTORS-7+2
+	DB 0,4,0,0,1,2
 	DW 3
+	DB 6,0
+	DW 7-2,0,0,0
+	DB "EMM0"
+
+	DS 32			; F:
+GRAMFL:
+	DW 0,GDRD,GDWT		; activated by M2K_GRAM_PROBE
+	DB 0FAH,1
+	DW M2K_GRAM_SECTORS-6+2
+	DB 0,4,0,0,1,2
+	DW 2
 	DB 5,1
-	DW 8,0,0,0
+	DW 6-2,0,0,0
 	DB "GRAM"
 	DS 31
 	DB 0
