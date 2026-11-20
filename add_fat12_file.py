@@ -83,6 +83,8 @@ def main() -> None:
                         help="output D88 image")
     parser.add_argument("--name", default=None,
                         help="8.3 FAT name (default: host filename)")
+    parser.add_argument("--replace", action="store_true",
+                        help="replace an existing file with the same name")
     args = parser.parse_args()
 
     image = bytearray(args.image.read_bytes())
@@ -124,10 +126,12 @@ def main() -> None:
 
     root = bytearray().join(sectors[root_start:root_start + root_sectors])
     existing = [root[i:i + 32] for i in range(0, len(root), 32)]
-    if any(entry[:11] == fat_name and entry[0] not in (0xE5, 0x00) for entry in existing):
+    existing_index = next((i for i, entry in enumerate(existing)
+                           if entry[:11] == fat_name and entry[0] not in (0xE5, 0x00)), None)
+    if existing_index is not None and not args.replace:
         fail(f"file already exists: {name}")
-    entry_index = next((i for i, entry in enumerate(existing)
-                        if entry[0] in (0x00, 0xE5)), None)
+    entry_index = existing_index if existing_index is not None else next(
+        (i for i, entry in enumerate(existing) if entry[0] in (0x00, 0xE5)), None)
     if entry_index is None or entry_index >= root_entries:
         fail("root directory is full")
 
@@ -136,6 +140,16 @@ def main() -> None:
     image_max_cluster = ((len(sectors) - data_start) // sectors_per_cluster) + 1
     fat_max_cluster = (2 * (len(fat) - 2)) // 3
     max_cluster = min(image_max_cluster, fat_max_cluster)
+    if existing_index is not None:
+        old_cluster = struct.unpack_from("<H", root, existing_index * 32 + 26)[0]
+        seen = set()
+        while 2 <= old_cluster <= max_cluster and old_cluster not in seen:
+            seen.add(old_cluster)
+            next_cluster = fat_get(fat, old_cluster)
+            fat_set(fat, old_cluster, 0)
+            if next_cluster >= 0xFF8:
+                break
+            old_cluster = next_cluster
     free = [cluster for cluster in range(2, max_cluster + 1)
             if fat_get(fat, cluster) == 0]
     if len(free) < cluster_count:

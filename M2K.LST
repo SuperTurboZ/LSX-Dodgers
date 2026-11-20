@@ -4352,7 +4352,7 @@
        EB9E                     DRD24B:
 0019E8 EB9E DDE5            15      PUSH    IX
 0019EA EBA0 DD2AA8F0        20      LD  IX,(_DPB)
-0019EE EBA4 CDCCED          17      CALL    FDRD        ;自己書き換え（ディスク読み込み）
+0019EE EBA4 CDD9ED          17      CALL    FDRD        ;自己書き換え（ディスク読み込み）
        EBA5                     DRDPAT  EQU $-2
 0019F1 EBA7 DDE1            14      POP IX
 0019F3 EBA9 C9              10      RET
@@ -4362,7 +4362,7 @@
        EBAC                     DWT24B:
 0019F6 EBAC DDE5            15      PUSH    IX
 0019F8 EBAE DD2AA8F0        20      LD  IX,(_DPB)
-0019FC EBB2 CDD0ED          17      CALL    FDWT        ;自己書き換え（ディスク書き込み）
+0019FC EBB2 CDDDED          17      CALL    FDWT        ;自己書き換え（ディスク書き込み）
        EBB3                     DWTPAT  EQU $-2
 0019FF EBB5 DDE1            14      POP IX
 001A01 EBB7 D0              11      RET NC
@@ -4679,248 +4679,248 @@
        ED50                     M2K_FDC_COMMAND:
 001B9A ED50 2F               4      CPL
 001B9B ED51 D3D8            11      OUT (FDC_STATUS),A
-001B9D ED53 00               4      NOP
-001B9E ED54 00               4      NOP
-001B9F ED55 00               4      NOP
-001BA0 ED56 00               4      NOP
-001BA1 ED57 C9              10      RET
+       ED53                     M2K_FDC_SETTLE:
+001B9D ED53 3E1A             7      LD A,26         ; about 0.1 ms at 4 MHz, as in M7DISK
+       ED55                     M2K_FDC_SETTLE_LOOP:
+001B9F ED55 3D               4      DEC A
+001BA0 ED56 20FD            12      JR NZ,M2K_FDC_SETTLE_LOOP
+001BA2 ED58 C9              10      RET
                                 
                                 ; DE = LBA, IX = DPB. Return D = cylinder and E = sector ID.
-       ED58                     M2K_FDC_SEEK:
-001BA2 ED58 E5              11      PUSH HL
-001BA3 ED59 EB               4      EX DE,HL
-001BA4 ED5A DD4E0D          19      LD C,(IX+DPB_MAXSEC)
-001BA7 ED5D 79               4      LD A,C
-001BA8 ED5E B7               4      OR A
-001BA9 ED5F 2868            12      JR Z,M2K_FDC_BAD_GEOMETRY
-001BAB ED61 0610             7      LD B,16
-001BAD ED63 AF               4      XOR A
-       ED64                     M2K_FDC_DIVIDE:
-001BAE ED64 29              11      ADD HL,HL
-001BAF ED65 8F               4      ADC A,A
-001BB0 ED66 B9               4      CP C
-001BB1 ED67 3802            12      JR C,M2K_FDC_DIV_NEXT
-001BB3 ED69 91               4      SUB C
-001BB4 ED6A 2C               4      INC L
-       ED6B                     M2K_FDC_DIV_NEXT:
-001BB5 ED6B 10F7            13      DJNZ M2K_FDC_DIVIDE
-001BB7 ED6D 3C               4      INC A
-001BB8 ED6E 5F               4      LD E,A
-001BB9 ED6F CB3D             8      SRL L
-001BBB ED71 55               4      LD D,L
-001BBC ED72 9F               4      SBC A,A
-001BBD ED73 4F               4      LD C,A
-001BBE ED74 7A               4      LD A,D
-001BBF ED75 DDBE0C          19      CP (IX+DPB_MAXCYL)
-001BC2 ED78 304F            12      JR NC,M2K_FDC_BAD_GEOMETRY
-001BC4 ED7A E1              10      POP HL
-001BC5 ED7B 3A84F0          13      LD A,(_DRIVE)
-001BC8 ED7E FE04             7      CP 4
-001BCA ED80 3F               4      CCF
-001BCB ED81 D8              11      RET C
-001BCC ED82 F684             7      OR 84H
-001BCE ED84 D3DC            11      OUT (FDC_DRIVE),A
-001BD0 ED86 79               4      LD A,C
-001BD1 ED87 D3DD            11      OUT (FDC_SIDE),A
-001BD3 ED89 CD3BED          17      CALL M2K_FDC_READY
-001BD6 ED8C D8              11      RET C
-001BD7 ED8D 3A84F0          13      LD A,(_DRIVE)
-001BDA ED90 4F               4      LD C,A
-001BDB ED91 0600             7      LD B,0
-001BDD ED93 2180F0          10      LD HL,_CYL0
-001BE0 ED96 09              11      ADD HL,BC
-001BE1 ED97 7E               7      LD A,(HL)
-001BE2 ED98 3C               4      INC A
-001BE3 ED99 200B            12      JR NZ,M2K_FDC_KNOWN
-001BE5 ED9B 3E08             7      LD A,08H            ; Restore
-001BE7 ED9D CD50ED          17      CALL M2K_FDC_COMMAND
-001BEA EDA0 CD3BED          17      CALL M2K_FDC_READY
-001BED EDA3 D8              11      RET C
-001BEE EDA4 3600            10      LD (HL),0
-       EDA6                     M2K_FDC_KNOWN:
-001BF0 EDA6 7E               7      LD A,(HL)
-001BF1 EDA7 2F               4      CPL
-001BF2 EDA8 D3D9            11      OUT (FDC_TRACK),A
-001BF4 EDAA 2F               4      CPL
-001BF5 EDAB BA               4      CP D
-001BF6 EDAC C8              11      RET Z
-001BF7 EDAD 7A               4      LD A,D
+       ED59                     M2K_FDC_SEEK:
+001BA3 ED59 E5              11      PUSH HL
+001BA4 ED5A EB               4      EX DE,HL
+001BA5 ED5B DD4E0D          19      LD C,(IX+DPB_MAXSEC)
+001BA8 ED5E 79               4      LD A,C
+001BA9 ED5F B7               4      OR A
+001BAA ED60 2874            12      JR Z,M2K_FDC_BAD_GEOMETRY
+001BAC ED62 0610             7      LD B,16
+001BAE ED64 AF               4      XOR A
+       ED65                     M2K_FDC_DIVIDE:
+001BAF ED65 29              11      ADD HL,HL
+001BB0 ED66 8F               4      ADC A,A
+001BB1 ED67 B9               4      CP C
+001BB2 ED68 3802            12      JR C,M2K_FDC_DIV_NEXT
+001BB4 ED6A 91               4      SUB C
+001BB5 ED6B 2C               4      INC L
+       ED6C                     M2K_FDC_DIV_NEXT:
+001BB6 ED6C 10F7            13      DJNZ M2K_FDC_DIVIDE
+001BB8 ED6E 3C               4      INC A
+001BB9 ED6F 5F               4      LD E,A
+001BBA ED70 CB3D             8      SRL L
+001BBC ED72 55               4      LD D,L
+001BBD ED73 9F               4      SBC A,A
+001BBE ED74 4F               4      LD C,A
+001BBF ED75 7A               4      LD A,D
+001BC0 ED76 DDBE0C          19      CP (IX+DPB_MAXCYL)
+001BC3 ED79 305B            12      JR NC,M2K_FDC_BAD_GEOMETRY
+001BC5 ED7B E1              10      POP HL
+001BC6 ED7C 3A84F0          13      LD A,(_DRIVE)
+001BC9 ED7F FE04             7      CP 4
+001BCB ED81 3F               4      CCF
+001BCC ED82 D8              11      RET C
+001BCD ED83 F684             7      OR 84H
+001BCF ED85 D3DC            11      OUT (FDC_DRIVE),A
+001BD1 ED87 79               4      LD A,C
+001BD2 ED88 D3DD            11      OUT (FDC_SIDE),A
+001BD4 ED8A CD53ED          17      CALL M2K_FDC_SETTLE
+001BD7 ED8D CD3BED          17      CALL M2K_FDC_READY
+001BDA ED90 D8              11      RET C
+001BDB ED91 3A84F0          13      LD A,(_DRIVE)
+001BDE ED94 4F               4      LD C,A
+001BDF ED95 0600             7      LD B,0
+001BE1 ED97 2180F0          10      LD HL,_CYL0
+001BE4 ED9A 09              11      ADD HL,BC
+001BE5 ED9B 7E               7      LD A,(HL)
+001BE6 ED9C 3C               4      INC A
+001BE7 ED9D 200E            12      JR NZ,M2K_FDC_KNOWN
+001BE9 ED9F 0E08             7      LD C,08H            ; Restore
+001BEB EDA1 CDC5ED          17      CALL M2K_FDC_TYPE1
+001BEE EDA4 D8              11      RET C
+001BEF EDA5 E69C             7      AND 09CH            ; Not Ready, Seek Error, CRC Error, Track 0
+001BF1 EDA7 EE04             7      XOR 04H         ; do not cache cylinder 0 unless Track 0 is set
+001BF3 EDA9 37               4      SCF
+001BF4 EDAA C0              11      RET NZ
+001BF5 EDAB 3600            10      LD (HL),0
+       EDAD                     M2K_FDC_KNOWN:
+001BF7 EDAD 7E               7      LD A,(HL)
 001BF8 EDAE 2F               4      CPL
-001BF9 EDAF D3DB            11      OUT (FDC_DATA),A
-001BFB EDB1 3A85F0          13      LD A,(_SEEKSP)
-001BFE EDB4 E603             7      AND 3
-001C00 EDB6 F618             7      OR 18H
-001C02 EDB8 CD50ED          17      CALL M2K_FDC_COMMAND
-001C05 EDBB CD3BED          17      CALL M2K_FDC_READY
-001C08 EDBE D8              11      RET C
-001C09 EDBF DBD8            11      IN A,(FDC_STATUS)
-001C0B EDC1 2F               4      CPL
-001C0C EDC2 E618             7      AND 18H
-001C0E EDC4 37               4      SCF
-001C0F EDC5 C0              11      RET NZ
-001C10 EDC6 72               7      LD (HL),D
-001C11 EDC7 B7               4      OR A
-001C12 EDC8 C9              10      RET
-       EDC9                     M2K_FDC_BAD_GEOMETRY:
-001C13 EDC9 E1              10      POP HL
-001C14 EDCA 37               4      SCF
-001C15 EDCB C9              10      RET
+001BF9 EDAF D3D9            11      OUT (FDC_TRACK),A
+001BFB EDB1 2F               4      CPL
+001BFC EDB2 BA               4      CP D
+001BFD EDB3 C8              11      RET Z
+001BFE EDB4 7A               4      LD A,D
+001BFF EDB5 2F               4      CPL
+001C00 EDB6 D3DB            11      OUT (FDC_DATA),A
+001C02 EDB8 0E18             7      LD C,18H            ; Seek
+001C04 EDBA CDC5ED          17      CALL M2K_FDC_TYPE1
+001C07 EDBD D8              11      RET C
+001C08 EDBE E698             7      AND 098H            ; Not Ready, Seek Error, CRC Error
+001C0A EDC0 37               4      SCF
+001C0B EDC1 C0              11      RET NZ
+001C0C EDC2 72               7      LD (HL),D
+001C0D EDC3 B7               4      OR A
+001C0E EDC4 C9              10      RET
+       EDC5                     M2K_FDC_TYPE1:
+001C0F EDC5 3A85F0          13      LD A,(_SEEKSP)
+001C12 EDC8 E603             7      AND 3
+001C14 EDCA B1               4      OR C
+001C15 EDCB CD50ED          17      CALL M2K_FDC_COMMAND
+001C18 EDCE CD3BED          17      CALL M2K_FDC_READY
+001C1B EDD1 D8              11      RET C
+001C1C EDD2 DBD8            11      IN A,(FDC_STATUS)
+001C1E EDD4 2F               4      CPL
+001C1F EDD5 C9              10      RET
+       EDD6                     M2K_FDC_BAD_GEOMETRY:
+001C20 EDD6 E1              10      POP HL
+001C21 EDD7 37               4      SCF
+001C22 EDD8 C9              10      RET
                                 
                                 ; On success advance both HL and DE, as the common disk layer expects.
-       EDCC                     FDRD:
-001C16 EDCC 3E80             7      LD A,80H
-001C18 EDCE 1808            12      JR M2K_FDC_START
-       EDD0                     FDWT:
-001C1A EDD0 3EA0             7      LD A,0A0H
-001C1C EDD2 1804            12      JR M2K_FDC_START
-       EDD4                     WTTRK:
-001C1E EDD4 3EF4             7      LD A,0F4H
-001C20 EDD6 0601             7      LD B,1
-       EDD8                     M2K_FDC_START:
-001C22 EDD8 F3               4      DI
-001C23 EDD9 32B2EE          13      LD (M2K_FDC_OP),A
-001C26 EDDC E5              11      PUSH HL
-001C27 EDDD 2136EE          10      LD HL,M2K_FDC_READ
-001C2A EDE0 CB6F             8      BIT 5,A
-001C2C EDE2 2803            12      JR Z,M2K_FDC_SET_BYTE
-001C2E EDE4 213CEE          10      LD HL,M2K_FDC_WRITE
-       EDE7                     M2K_FDC_SET_BYTE:
-001C31 EDE7 2226EE          16      LD (M2K_FDC_BYTE_VECTOR),HL
-001C34 EDEA E1              10      POP HL
-       EDEB                     M2K_FDC_NEXT:
-001C35 EDEB 3E02             7      LD A,2
-001C37 EDED 32B3EE          13      LD (M2K_FDC_RETRY),A
-       EDF0                     M2K_FDC_ATTEMPT:
-001C3A EDF0 C5              11      PUSH BC
-001C3B EDF1 D5              11      PUSH DE
-001C3C EDF2 E5              11      PUSH HL
-001C3D EDF3 CD58ED          17      CALL M2K_FDC_SEEK
-001C40 EDF6 E1              10      POP HL
-001C41 EDF7 DA82EE          10      JP C,M2K_FDC_FAILED
-001C44 EDFA 7B               4      LD A,E
-001C45 EDFB 2F               4      CPL
-001C46 EDFC D3DA            11      OUT (FDC_SECTOR),A
-001C48 EDFE E5              11      PUSH HL
-001C49 EDFF DD460F          19      LD B,(IX+DPB_BPS)
-001C4C EE02 CBB8             8      RES 7,B
-001C4E EE04 0E00             7      LD C,0
-001C50 EE06 3AB2EE          13      LD A,(M2K_FDC_OP)
-001C53 EE09 FEF4             7      CP 0F4H
-001C55 EE0B 2003            12      JR NZ,M2K_FDC_RUN
-001C57 EE0D 01001A          10      LD BC,6656          ; upper bound for a 2D write-track stream
-       EE10                     M2K_FDC_RUN:
-001C5A EE10 5F               4      LD E,A
-001C5B EE11 78               4      LD A,B
-001C5C EE12 B1               4      OR C
-001C5D EE13 CA81EE          10      JP Z,M2K_FDC_DATA_FAILED
-001C60 EE16 D9               4      EXX
-001C61 EE17 E5              11      PUSH HL
-001C62 EE18 210000          10      LD HL,0         ; 65536 polls without DRQ, about 1.3 s at 4 MHz
-001C65 EE1B D9               4      EXX
-001C66 EE1C 7B               4      LD A,E
-001C67 EE1D CD50ED          17      CALL M2K_FDC_COMMAND
-                                    ; Do not access the PIT while the FDC may start a byte transfer.
-       EE20                     M2K_FDC_POLL:
-001C6A EE20 DBD8            11      IN A,(FDC_STATUS)
-001C6C EE22 2F               4      CPL
-001C6D EE23 0F               4      RRCA
-001C6E EE24 0F               4      RRCA
-001C6F EE25 DA36EE          10      JP C,M2K_FDC_READ
-       EE26                     M2K_FDC_BYTE_VECTOR EQU $-2
-001C72 EE28 CB77             8      BIT 6,A         ; BUSY after the two rotates
-001C74 EE2A 282E            12      JR Z,M2K_FDC_DONE
-001C76 EE2C D9               4      EXX
-001C77 EE2D 2B               6      DEC HL
-001C78 EE2E 7C               4      LD A,H
-001C79 EE2F B5               4      OR L
-001C7A EE30 D9               4      EXX
-001C7B EE31 C220EE          10      JP NZ,M2K_FDC_POLL
-001C7E EE34 1843            12      JR M2K_FDC_ABORT
-       EE36                     M2K_FDC_READ:
-001C80 EE36 DBDB            11      IN A,(FDC_DATA)
-001C82 EE38 2F               4      CPL
-001C83 EE39 77               7      LD (HL),A
-001C84 EE3A 1804            12      JR M2K_FDC_BYTE_END
-       EE3C                     M2K_FDC_WRITE:
-001C86 EE3C 7E               7      LD A,(HL)
+       EDD9                     FDRD:
+001C23 EDD9 3E80             7      LD A,80H
+001C25 EDDB 1808            12      JR M2K_FDC_START
+       EDDD                     FDWT:
+001C27 EDDD 3EA0             7      LD A,0A0H
+001C29 EDDF 1804            12      JR M2K_FDC_START
+       EDE1                     WTTRK:
+001C2B EDE1 3EF4             7      LD A,0F4H
+001C2D EDE3 0601             7      LD B,1
+       EDE5                     M2K_FDC_START:
+001C2F EDE5 C5              11      PUSH BC
+001C30 EDE6 4F               4      LD C,A
+001C31 EDE7 ED57             9      LD A,I
+001C33 EDE9 F3               4      DI
+001C34 EDEA 79               4      LD A,C
+001C35 EDEB C1              10      POP BC
+001C36 EDEC F5              11      PUSH AF             ; preserve the caller's interrupt state across retries
+001C37 EDED 32B2EE          13      LD (M2K_FDC_OP),A
+001C3A EDF0 E5              11      PUSH HL
+001C3B EDF1 213BEE          10      LD HL,M2K_FDC_READ
+001C3E EDF4 CB6F             8      BIT 5,A
+001C40 EDF6 2803            12      JR Z,M2K_FDC_SET_BYTE
+001C42 EDF8 2141EE          10      LD HL,M2K_FDC_WRITE
+       EDFB                     M2K_FDC_SET_BYTE:
+001C45 EDFB 2233EE          16      LD (M2K_FDC_BYTE_VECTOR),HL
+001C48 EDFE E1              10      POP HL
+       EDFF                     M2K_FDC_NEXT:
+001C49 EDFF 3E02             7      LD A,2
+001C4B EE01 32B3EE          13      LD (M2K_FDC_RETRY),A
+       EE04                     M2K_FDC_ATTEMPT:
+001C4E EE04 C5              11      PUSH BC
+001C4F EE05 D5              11      PUSH DE
+001C50 EE06 E5              11      PUSH HL
+001C51 EE07 CD59ED          17      CALL M2K_FDC_SEEK
+001C54 EE0A E1              10      POP HL
+001C55 EE0B DA7DEE          10      JP C,M2K_FDC_FAILED
+001C58 EE0E 7B               4      LD A,E
+001C59 EE0F 2F               4      CPL
+001C5A EE10 D3DA            11      OUT (FDC_SECTOR),A
+001C5C EE12 E5              11      PUSH HL
+001C5D EE13 DD460F          19      LD B,(IX+DPB_BPS)
+001C60 EE16 CBB8             8      RES 7,B
+001C62 EE18 0E00             7      LD C,0
+001C64 EE1A 3AB2EE          13      LD A,(M2K_FDC_OP)
+001C67 EE1D FEF4             7      CP 0F4H
+001C69 EE1F 2003            12      JR NZ,M2K_FDC_RUN
+001C6B EE21 01001A          10      LD BC,6656          ; upper bound for a 2D write-track stream
+       EE24                     M2K_FDC_RUN:
+001C6E EE24 5F               4      LD E,A
+001C6F EE25 78               4      LD A,B
+001C70 EE26 B1               4      OR C
+001C71 EE27 CA7CEE          10      JP Z,M2K_FDC_DATA_FAILED
+001C74 EE2A 7B               4      LD A,E
+001C75 EE2B CD50ED          17      CALL M2K_FDC_COMMAND
+                                    ; Test active-low DRQ and BUSY directly to shorten the polling loop.
+       EE2E                     M2K_FDC_POLL:
+001C78 EE2E DBD8            11      IN A,(FDC_STATUS)
+001C7A EE30 0F               4      RRCA
+001C7B EE31 0F               4      RRCA
+001C7C EE32 D23BEE          10      JP NC,M2K_FDC_READ
+       EE33                     M2K_FDC_BYTE_VECTOR EQU $-2
+001C7F EE35 CB77             8      BIT 6,A         ; active-low BUSY after the two rotates
+001C81 EE37 28F5            12      JR Z,M2K_FDC_POLL
+001C83 EE39 181A            12      JR M2K_FDC_DONE
+       EE3B                     M2K_FDC_READ:
+001C85 EE3B DBDB            11      IN A,(FDC_DATA)
 001C87 EE3D 2F               4      CPL
-001C88 EE3E D3DB            11      OUT (FDC_DATA),A
-       EE40                     M2K_FDC_BYTE_END:
-001C8A EE40 23               6      INC HL
-001C8B EE41 0B               6      DEC BC
-001C8C EE42 78               4      LD A,B
-001C8D EE43 B1               4      OR C
-001C8E EE44 20DA            12      JR NZ,M2K_FDC_POLL
+001C88 EE3E 77               7      LD (HL),A
+001C89 EE3F 1804            12      JR M2K_FDC_BYTE_END
+       EE41                     M2K_FDC_WRITE:
+001C8B EE41 7E               7      LD A,(HL)
+001C8C EE42 2F               4      CPL
+001C8D EE43 D3DB            11      OUT (FDC_DATA),A
+       EE45                     M2K_FDC_BYTE_END:
+001C8F EE45 23               6      INC HL
+001C90 EE46 0B               6      DEC BC
+001C91 EE47 78               4      LD A,B
+001C92 EE48 B1               4      OR C
+001C93 EE49 20E3            12      JR NZ,M2K_FDC_POLL
                                 
                                 ; The buffer is full. Wait for completion and reject an unexpected DRQ.
-       EE46                     M2K_FDC_WAIT_END:
-001C90 EE46 DBD8            11      IN A,(FDC_STATUS)
-001C92 EE48 2F               4      CPL
-001C93 EE49 0F               4      RRCA
-001C94 EE4A 0F               4      RRCA
-001C95 EE4B 382C            12      JR C,M2K_FDC_ABORT
-001C97 EE4D CB77             8      BIT 6,A
-001C99 EE4F 2809            12      JR Z,M2K_FDC_DONE
-001C9B EE51 D9               4      EXX
-001C9C EE52 2B               6      DEC HL
-001C9D EE53 7C               4      LD A,H
-001C9E EE54 B5               4      OR L
-001C9F EE55 D9               4      EXX
-001CA0 EE56 20EE            12      JR NZ,M2K_FDC_WAIT_END
-001CA2 EE58 181F            12      JR M2K_FDC_ABORT
-       EE5A                     M2K_FDC_DONE:
-001CA4 EE5A D9               4      EXX
-001CA5 EE5B E1              10      POP HL
-001CA6 EE5C D9               4      EXX
-001CA7 EE5D 07               4      RLCA
-001CA8 EE5E 07               4      RLCA
-001CA9 EE5F E6FC             7      AND 0FCH
-001CAB EE61 201E            12      JR NZ,M2K_FDC_DATA_FAILED
-001CAD EE63 7B               4      LD A,E
-001CAE EE64 FEF4             7      CP 0F4H
-001CB0 EE66 2804            12      JR Z,M2K_FDC_SUCCESS
-001CB2 EE68 78               4      LD A,B
-001CB3 EE69 B1               4      OR C
-001CB4 EE6A 2015            12      JR NZ,M2K_FDC_DATA_FAILED
-       EE6C                     M2K_FDC_SUCCESS:
-001CB6 EE6C F1              10      POP AF              ; discard original buffer pointer
-001CB7 EE6D D1              10      POP DE
-001CB8 EE6E C1              10      POP BC
-001CB9 EE6F 13               6      INC DE
-001CBA EE70 05               4      DEC B
-001CBB EE71 C2EBED          10      JP NZ,M2K_FDC_NEXT
-001CBE EE74 CDAAEE          17      CALL M2K_FDC_STOP
-001CC1 EE77 AF               4      XOR A
-001CC2 EE78 C9              10      RET
-       EE79                     M2K_FDC_ABORT:
-001CC3 EE79 D9               4      EXX
-001CC4 EE7A E1              10      POP HL
-001CC5 EE7B D9               4      EXX
-001CC6 EE7C 3ED0             7      LD A,0D0H           ; Force Interrupt (terminate command)
-001CC8 EE7E CD50ED          17      CALL M2K_FDC_COMMAND
-       EE81                     M2K_FDC_DATA_FAILED:
-001CCB EE81 E1              10      POP HL
-       EE82                     M2K_FDC_FAILED:
-001CCC EE82 D1              10      POP DE
-001CCD EE83 C1              10      POP BC
-001CCE EE84 E5              11      PUSH HL
-001CCF EE85 D5              11      PUSH DE
-001CD0 EE86 3A84F0          13      LD A,(_DRIVE)
-001CD3 EE89 FE04             7      CP 4
-001CD5 EE8B 3009            12      JR NC,M2K_FDC_NO_CACHE
-001CD7 EE8D 5F               4      LD E,A
-001CD8 EE8E 1600             7      LD D,0
-001CDA EE90 2180F0          10      LD HL,_CYL0
-001CDD EE93 19              11      ADD HL,DE
-001CDE EE94 36FF            10      LD (HL),0FFH
-       EE96                     M2K_FDC_NO_CACHE:
-001CE0 EE96 D1              10      POP DE
-001CE1 EE97 E1              10      POP HL
-001CE2 EE98 3AB3EE          13      LD A,(M2K_FDC_RETRY)
-001CE5 EE9B 3D               4      DEC A
-001CE6 EE9C 32B3EE          13      LD (M2K_FDC_RETRY),A
-001CE9 EE9F C2F0ED          10      JP NZ,M2K_FDC_ATTEMPT
-001CEC EEA2 CDAAEE          17      CALL M2K_FDC_STOP
+       EE4B                     M2K_FDC_WAIT_END:
+001C95 EE4B DBD8            11      IN A,(FDC_STATUS)
+001C97 EE4D 0F               4      RRCA
+001C98 EE4E 0F               4      RRCA
+001C99 EE4F 3026            12      JR NC,M2K_FDC_ABORT
+001C9B EE51 CB77             8      BIT 6,A
+001C9D EE53 28F6            12      JR Z,M2K_FDC_WAIT_END
+       EE55                     M2K_FDC_DONE:
+001C9F EE55 07               4      RLCA
+001CA0 EE56 07               4      RLCA
+001CA1 EE57 2F               4      CPL
+001CA2 EE58 E6FC             7      AND 0FCH
+001CA4 EE5A 2020            12      JR NZ,M2K_FDC_DATA_FAILED
+001CA6 EE5C 7B               4      LD A,E
+001CA7 EE5D FEF4             7      CP 0F4H
+001CA9 EE5F 2804            12      JR Z,M2K_FDC_SUCCESS
+001CAB EE61 78               4      LD A,B
+001CAC EE62 B1               4      OR C
+001CAD EE63 2017            12      JR NZ,M2K_FDC_DATA_FAILED
+       EE65                     M2K_FDC_SUCCESS:
+001CAF EE65 F1              10      POP AF              ; discard original buffer pointer
+001CB0 EE66 D1              10      POP DE
+001CB1 EE67 C1              10      POP BC
+001CB2 EE68 13               6      INC DE
+001CB3 EE69 05               4      DEC B
+001CB4 EE6A C2FFED          10      JP NZ,M2K_FDC_NEXT
+001CB7 EE6D CDAAEE          17      CALL M2K_FDC_STOP
+001CBA EE70 F1              10      POP AF
+001CBB EE71 E275EE          10      JP PO,M2K_FDC_RETURN_OK
+001CBE EE74 FB               4      EI
+       EE75                     M2K_FDC_RETURN_OK:
+001CBF EE75 AF               4      XOR A
+001CC0 EE76 C9              10      RET
+       EE77                     M2K_FDC_ABORT:
+001CC1 EE77 3ED0             7      LD A,0D0H           ; Force Interrupt (terminate command)
+001CC3 EE79 CD50ED          17      CALL M2K_FDC_COMMAND
+       EE7C                     M2K_FDC_DATA_FAILED:
+001CC6 EE7C E1              10      POP HL
+       EE7D                     M2K_FDC_FAILED:
+001CC7 EE7D D1              10      POP DE
+001CC8 EE7E C1              10      POP BC
+001CC9 EE7F E5              11      PUSH HL
+001CCA EE80 D5              11      PUSH DE
+001CCB EE81 3A84F0          13      LD A,(_DRIVE)
+001CCE EE84 FE04             7      CP 4
+001CD0 EE86 3009            12      JR NC,M2K_FDC_NO_CACHE
+001CD2 EE88 5F               4      LD E,A
+001CD3 EE89 1600             7      LD D,0
+001CD5 EE8B 2180F0          10      LD HL,_CYL0
+001CD8 EE8E 19              11      ADD HL,DE
+001CD9 EE8F 36FF            10      LD (HL),0FFH
+       EE91                     M2K_FDC_NO_CACHE:
+001CDB EE91 D1              10      POP DE
+001CDC EE92 E1              10      POP HL
+001CDD EE93 3AB3EE          13      LD A,(M2K_FDC_RETRY)
+001CE0 EE96 3D               4      DEC A
+001CE1 EE97 32B3EE          13      LD (M2K_FDC_RETRY),A
+001CE4 EE9A C204EE          10      JP NZ,M2K_FDC_ATTEMPT
+001CE7 EE9D CDAAEE          17      CALL M2K_FDC_STOP
+001CEA EEA0 F1              10      POP AF
+001CEB EEA1 E2A5EE          10      JP PO,M2K_FDC_RETURN_ERROR
+001CEE EEA4 FB               4      EI
+       EEA5                     M2K_FDC_RETURN_ERROR:
 001CEF EEA5 3EFF             7      LD A,0FFH
 001CF1 EEA7 B7               4      OR A
 001CF2 EEA8 37               4      SCF
@@ -5225,9 +5225,9 @@
        F0E2                     _RDFATX:
 001F2C F0E2 C3E8E8          10      JP  RDFATX
 001F2F F0E5 C31AEA          10  _RDFAT: JP  RDFAT
-001F32 F0E8 C3D4ED          10  _WTTRK: JP  WTTRK
-001F35 F0EB C3CCED          10  _FDRD:  JP  FDRD
-001F38 F0EE C3D0ED          10  _FDWT:  JP  FDWT
+001F32 F0E8 C3E1ED          10  _WTTRK: JP  WTTRK
+001F35 F0EB C3D9ED          10  _FDRD:  JP  FDRD
+001F38 F0EE C3DDED          10  _FDWT:  JP  FDWT
        F0F1                     _BPB2DPB:
 001F3B F0F1 C3B2EA          10      JP  BPB2DPB
        F0F4                     _BREAK:

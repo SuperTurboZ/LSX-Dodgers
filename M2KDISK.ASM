@@ -64,10 +64,11 @@ M2K_FDC_READY_LOOP:
 M2K_FDC_COMMAND:
 	CPL
 	OUT (FDC_STATUS),A
-	NOP
-	NOP
-	NOP
-	NOP
+M2K_FDC_SETTLE:
+	LD A,26			; about 0.1 ms at 4 MHz, as in M7DISK
+M2K_FDC_SETTLE_LOOP:
+	DEC A
+	JR NZ,M2K_FDC_SETTLE_LOOP
 	RET
 
 ; DE = LBA, IX = DPB. Return D = cylinder and E = sector ID.
@@ -107,6 +108,7 @@ M2K_FDC_DIV_NEXT:
 	OUT (FDC_DRIVE),A
 	LD A,C
 	OUT (FDC_SIDE),A
+	CALL M2K_FDC_SETTLE
 	CALL M2K_FDC_READY
 	RET C
 	LD A,(_DRIVE)
@@ -117,10 +119,13 @@ M2K_FDC_DIV_NEXT:
 	LD A,(HL)
 	INC A
 	JR NZ,M2K_FDC_KNOWN
-	LD A,08H			; Restore
-	CALL M2K_FDC_COMMAND
-	CALL M2K_FDC_READY
+	LD C,08H			; Restore
+	CALL M2K_FDC_TYPE1
 	RET C
+	AND 09CH			; Not Ready, Seek Error, CRC Error, Track 0
+	XOR 04H			; do not cache cylinder 0 unless Track 0 is set
+	SCF
+	RET NZ
 	LD (HL),0
 M2K_FDC_KNOWN:
 	LD A,(HL)
@@ -132,19 +137,24 @@ M2K_FDC_KNOWN:
 	LD A,D
 	CPL
 	OUT (FDC_DATA),A
+	LD C,18H			; Seek
+	CALL M2K_FDC_TYPE1
+	RET C
+	AND 098H			; Not Ready, Seek Error, CRC Error
+	SCF
+	RET NZ
+	LD (HL),D
+	OR A
+	RET
+M2K_FDC_TYPE1:
 	LD A,(_SEEKSP)
 	AND 3
-	OR 18H
+	OR C
 	CALL M2K_FDC_COMMAND
 	CALL M2K_FDC_READY
 	RET C
 	IN A,(FDC_STATUS)
 	CPL
-	AND 18H
-	SCF
-	RET NZ
-	LD (HL),D
-	OR A
 	RET
 M2K_FDC_BAD_GEOMETRY:
 	POP HL
@@ -162,7 +172,13 @@ WTTRK:
 	LD A,0F4H
 	LD B,1
 M2K_FDC_START:
+	PUSH BC
+	LD C,A
+	LD A,I
 	DI
+	LD A,C
+	POP BC
+	PUSH AF				; preserve the caller's interrupt state across retries
 	LD (M2K_FDC_OP),A
 	PUSH HL
 	LD HL,M2K_FDC_READ
@@ -198,29 +214,18 @@ M2K_FDC_RUN:
 	LD A,B
 	OR C
 	JP Z,M2K_FDC_DATA_FAILED
-	EXX
-	PUSH HL
-	LD HL,0			; 65536 polls without DRQ, about 1.3 s at 4 MHz
-	EXX
 	LD A,E
 	CALL M2K_FDC_COMMAND
-	; Do not access the PIT while the FDC may start a byte transfer.
+	; Test active-low DRQ and BUSY directly to shorten the polling loop.
 M2K_FDC_POLL:
 	IN A,(FDC_STATUS)
-	CPL
 	RRCA
 	RRCA
-	JP C,M2K_FDC_READ
+	JP NC,M2K_FDC_READ
 M2K_FDC_BYTE_VECTOR EQU $-2
-	BIT 6,A			; BUSY after the two rotates
-	JR Z,M2K_FDC_DONE
-	EXX
-	DEC HL
-	LD A,H
-	OR L
-	EXX
-	JP NZ,M2K_FDC_POLL
-	JR M2K_FDC_ABORT
+	BIT 6,A			; active-low BUSY after the two rotates
+	JR Z,M2K_FDC_POLL
+	JR M2K_FDC_DONE
 M2K_FDC_READ:
 	IN A,(FDC_DATA)
 	CPL
@@ -240,25 +245,15 @@ M2K_FDC_BYTE_END:
 ; The buffer is full. Wait for completion and reject an unexpected DRQ.
 M2K_FDC_WAIT_END:
 	IN A,(FDC_STATUS)
-	CPL
 	RRCA
 	RRCA
-	JR C,M2K_FDC_ABORT
+	JR NC,M2K_FDC_ABORT
 	BIT 6,A
-	JR Z,M2K_FDC_DONE
-	EXX
-	DEC HL
-	LD A,H
-	OR L
-	EXX
-	JR NZ,M2K_FDC_WAIT_END
-	JR M2K_FDC_ABORT
+	JR Z,M2K_FDC_WAIT_END
 M2K_FDC_DONE:
-	EXX
-	POP HL
-	EXX
 	RLCA
 	RLCA
+	CPL
 	AND 0FCH
 	JR NZ,M2K_FDC_DATA_FAILED
 	LD A,E
@@ -275,12 +270,13 @@ M2K_FDC_SUCCESS:
 	DEC B
 	JP NZ,M2K_FDC_NEXT
 	CALL M2K_FDC_STOP
+	POP AF
+	JP PO,M2K_FDC_RETURN_OK
+	EI
+M2K_FDC_RETURN_OK:
 	XOR A
 	RET
 M2K_FDC_ABORT:
-	EXX
-	POP HL
-	EXX
 	LD A,0D0H			; Force Interrupt (terminate command)
 	CALL M2K_FDC_COMMAND
 M2K_FDC_DATA_FAILED:
@@ -306,6 +302,10 @@ M2K_FDC_NO_CACHE:
 	LD (M2K_FDC_RETRY),A
 	JP NZ,M2K_FDC_ATTEMPT
 	CALL M2K_FDC_STOP
+	POP AF
+	JP PO,M2K_FDC_RETURN_ERROR
+	EI
+M2K_FDC_RETURN_ERROR:
 	LD A,0FFH
 	OR A
 	SCF

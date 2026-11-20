@@ -25,7 +25,7 @@
 000027 0027 E603             7      AND 3
 000029 0029 F684             7      OR 84H
 00002B 002B D3DC            11      OUT (0DCH),A
-00002D 002D CDC300          17      CALL IPL_READY
+00002D 002D CDB600          17      CALL IPL_READY
 000030 0030 218011          10      LD HL,MZT_HEADER_RAM
 000033 0033 110201          10      LD DE,BOOT_TRACK*256+BOOT_SECTOR
 000036 0036 3E11             7      LD A,MZT_SECTORS
@@ -39,104 +39,97 @@
 000041 0041 2F               4      CPL
 000042 0042 D3DB            11      OUT (0DBH),A
 000044 0044 3EE7             7      LD A,0E7H       ; inverted SEEK 18h
-000046 0046 CDBC00          17      CALL IPL_COMMAND
-000049 0049 CDC300          17      CALL IPL_READY
+000046 0046 CDAE00          17      CALL IPL_COMMAND
+000049 0049 CDB600          17      CALL IPL_READY
        004C                     IPL_SECTOR:
 00004C 004C 7B               4      LD A,E
 00004D 004D 2F               4      CPL
 00004E 004E D3DA            11      OUT (0DAH),A
 000050 0050 3E7F             7      LD A,07FH       ; inverted READ SECTOR 80h
-000052 0052 CDBC00          17      CALL IPL_COMMAND
+000052 0052 CDAE00          17      CALL IPL_COMMAND
 000055 0055 010002          10      LD BC,512
-000058 0058 DD210000        14      LD IX,0
-       005C                     IPL_DATA:
-00005C 005C DBD8            11      IN A,(0D8H)
-00005E 005E 0F               4      RRCA
-00005F 005F 3819            12      JR C,IPL_SECTOR_DONE
-000061 0061 0F               4      RRCA
-000062 0062 300A            12      JR NC,IPL_BYTE
-000064 0064 DD2B            10      DEC IX
-000066 0066 DD7C             9      LD A,IXH
-000068 0068 DDB5            10      OR IXL
-00006A 006A 20F0            12      JR NZ,IPL_DATA
-00006C 006C 1863            12      JR IPL_ERROR
-       006E                     IPL_BYTE:
-00006E 006E 78               4      LD A,B
-00006F 006F B1               4      OR C
-000070 0070 285F            12      JR Z,IPL_ERROR
-000072 0072 DBDB            11      IN A,(0DBH)
-000074 0074 2F               4      CPL
-000075 0075 77               7      LD (HL),A
-000076 0076 23               6      INC HL
-000077 0077 0B               6      DEC BC
-000078 0078 18E2            12      JR IPL_DATA
-       007A                     IPL_SECTOR_DONE:
-00007A 007A 2F               4      CPL
-00007B 007B E64F             7      AND 04FH
-00007D 007D 2052            12      JR NZ,IPL_ERROR
-00007F 007F 78               4      LD A,B
-000080 0080 B1               4      OR C
-000081 0081 204E            12      JR NZ,IPL_ERROR
-000083 0083 08               4      EX AF,AF'
-000084 0084 3D               4      DEC A
-000085 0085 280C            12      JR Z,IPL_CHECK_MZT
-000087 0087 08               4      EX AF,AF'
-000088 0088 1C               4      INC E
-000089 0089 7B               4      LD A,E
-00008A 008A FE0A             7      CP 10
-00008C 008C 38BE            12      JR C,IPL_SECTOR
-00008E 008E 1E01             7      LD E,1
-000090 0090 14               4      INC D
-000091 0091 18A6            12      JR IPL_TRACK
-       0093                     IPL_CHECK_MZT:
-000093 0093 CDDB00          17      CALL IPL_STOP_MOTOR
-000096 0096 3A8011          13      LD A,(MZT_HEADER_RAM)
-000099 0099 FE01             7      CP 1
-00009B 009B 2034            12      JR NZ,IPL_ERROR
-00009D 009D 2A9211          16      LD HL,(MZT_HEADER_RAM+18)
-0000A0 00A0 115921          10      LD DE,MZT_PAYLOAD_BYTES
-0000A3 00A3 B7               4      OR A
-0000A4 00A4 ED52            15      SBC HL,DE
-0000A6 00A6 2029            12      JR NZ,IPL_ERROR
-0000A8 00A8 2A9411          16      LD HL,(MZT_HEADER_RAM+20)
-0000AB 00AB 110012          10      LD DE,MZT_PAYLOAD_RAM
-0000AE 00AE ED52            15      SBC HL,DE
-0000B0 00B0 201F            12      JR NZ,IPL_ERROR
-0000B2 00B2 2A9611          16      LD HL,(MZT_HEADER_RAM+22)
-0000B5 00B5 ED52            15      SBC HL,DE
-0000B7 00B7 2018            12      JR NZ,IPL_ERROR
-0000B9 00B9 C30012          10      JP MZT_PAYLOAD_RAM
-       00BC                     IPL_COMMAND:
-0000BC 00BC D3D8            11      OUT (0D8H),A
-0000BE 00BE 00               4      NOP
-0000BF 00BF 00               4      NOP
-0000C0 00C0 00               4      NOP
-0000C1 00C1 00               4      NOP
-0000C2 00C2 C9              10      RET
-       00C3                     IPL_READY:
-0000C3 00C3 010000          10      LD BC,0
-       00C6                     IPL_READY_POLL:
-0000C6 00C6 DBD8            11      IN A,(0D8H)
-0000C8 00C8 2F               4      CPL
-0000C9 00C9 E681             7      AND 081H
-0000CB 00CB C8              11      RET Z
-0000CC 00CC 0B               6      DEC BC
-0000CD 00CD 78               4      LD A,B
-0000CE 00CE B1               4      OR C
-0000CF 00CF 20F5            12      JR NZ,IPL_READY_POLL
-       00D1                     IPL_ERROR:
-0000D1 00D1 3E2F             7      LD A,02FH       ; terminate the command
-0000D3 00D3 D3D8            11      OUT (0D8H),A
-0000D5 00D5 CDDB00          17      CALL IPL_STOP_MOTOR
-0000D8 00D8 76               4      HALT
-0000D9 00D9 18F6            12      JR IPL_ERROR
-       00DB                     IPL_STOP_MOTOR:
-0000DB 00DB 3AEC7F          13      LD A,(BOOT_DRIVE)
-0000DE 00DE E603             7      AND 3
-0000E0 00E0 D3DC            11      OUT (0DCH),A
-0000E2 00E2 C9              10      RET
-       00E3                     IPL_END:
-0000E3 00E3                         DS 255-($-IPLPRO)
+       0058                     IPL_DATA:
+000058 0058 DBD8            11      IN A,(0D8H)
+00005A 005A 0F               4      RRCA
+00005B 005B 380F            12      JR C,IPL_SECTOR_DONE
+00005D 005D 0F               4      RRCA
+00005E 005E 38F8            12      JR C,IPL_DATA
+000060 0060 78               4      LD A,B
+000061 0061 B1               4      OR C
+000062 0062 2860            12      JR Z,IPL_ERROR
+000064 0064 DBDB            11      IN A,(0DBH)
+000066 0066 2F               4      CPL
+000067 0067 77               7      LD (HL),A
+000068 0068 23               6      INC HL
+000069 0069 0B               6      DEC BC
+00006A 006A 18EC            12      JR IPL_DATA
+       006C                     IPL_SECTOR_DONE:
+00006C 006C 2F               4      CPL
+00006D 006D E64F             7      AND 04FH
+00006F 006F 2053            12      JR NZ,IPL_ERROR
+000071 0071 78               4      LD A,B
+000072 0072 B1               4      OR C
+000073 0073 204F            12      JR NZ,IPL_ERROR
+000075 0075 08               4      EX AF,AF'
+000076 0076 3D               4      DEC A
+000077 0077 280C            12      JR Z,IPL_CHECK_MZT
+000079 0079 08               4      EX AF,AF'
+00007A 007A 1C               4      INC E
+00007B 007B 7B               4      LD A,E
+00007C 007C FE0A             7      CP 10
+00007E 007E 38CC            12      JR C,IPL_SECTOR
+000080 0080 1E01             7      LD E,1
+000082 0082 14               4      INC D
+000083 0083 18B4            12      JR IPL_TRACK
+       0085                     IPL_CHECK_MZT:
+000085 0085 CDCE00          17      CALL IPL_STOP_MOTOR
+000088 0088 3A8011          13      LD A,(MZT_HEADER_RAM)
+00008B 008B FE01             7      CP 1
+00008D 008D 2035            12      JR NZ,IPL_ERROR
+00008F 008F 2A9211          16      LD HL,(MZT_HEADER_RAM+18)
+000092 0092 115921          10      LD DE,MZT_PAYLOAD_BYTES
+000095 0095 B7               4      OR A
+000096 0096 ED52            15      SBC HL,DE
+000098 0098 202A            12      JR NZ,IPL_ERROR
+00009A 009A 2A9411          16      LD HL,(MZT_HEADER_RAM+20)
+00009D 009D 110012          10      LD DE,MZT_PAYLOAD_RAM
+0000A0 00A0 ED52            15      SBC HL,DE
+0000A2 00A2 2020            12      JR NZ,IPL_ERROR
+0000A4 00A4 2A9611          16      LD HL,(MZT_HEADER_RAM+22)
+0000A7 00A7 ED52            15      SBC HL,DE
+0000A9 00A9 2019            12      JR NZ,IPL_ERROR
+0000AB 00AB C30012          10      JP MZT_PAYLOAD_RAM
+       00AE                     IPL_COMMAND:
+0000AE 00AE D3D8            11      OUT (0D8H),A
+0000B0 00B0 3E1A             7      LD A,26         ; allow BUSY to settle before the first status read
+       00B2                     IPL_COMMAND_DELAY:
+0000B2 00B2 3D               4      DEC A
+0000B3 00B3 20FD            12      JR NZ,IPL_COMMAND_DELAY
+0000B5 00B5 C9              10      RET
+       00B6                     IPL_READY:
+0000B6 00B6 010000          10      LD BC,0
+       00B9                     IPL_READY_POLL:
+0000B9 00B9 DBD8            11      IN A,(0D8H)
+0000BB 00BB 2F               4      CPL
+0000BC 00BC E681             7      AND 081H
+0000BE 00BE C8              11      RET Z
+0000BF 00BF 0B               6      DEC BC
+0000C0 00C0 78               4      LD A,B
+0000C1 00C1 B1               4      OR C
+0000C2 00C2 20F5            12      JR NZ,IPL_READY_POLL
+       00C4                     IPL_ERROR:
+0000C4 00C4 3E2F             7      LD A,02FH       ; terminate the command
+0000C6 00C6 D3D8            11      OUT (0D8H),A
+0000C8 00C8 CDCE00          17      CALL IPL_STOP_MOTOR
+0000CB 00CB 76               4      HALT
+0000CC 00CC 18F6            12      JR IPL_ERROR
+       00CE                     IPL_STOP_MOTOR:
+0000CE 00CE 3AEC7F          13      LD A,(BOOT_DRIVE)
+0000D1 00D1 E603             7      AND 3
+0000D3 00D3 D3DC            11      OUT (0DCH),A
+0000D5 00D5 C9              10      RET
+       00D6                     IPL_END:
+0000D6 00D6                         DS 255-($-IPLPRO)
 0000FF 00FF 00                      DB 0
                                     END
 [EOF:M2KIPL.ASM:UTF_8]
